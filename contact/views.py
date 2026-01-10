@@ -5,19 +5,26 @@ from rest_framework import status
 from django.core.mail import send_mail
 from django.conf import settings
 
+from drf_spectacular.utils import extend_schema
+from .serializers import ContactMessageSerializer
 
+@extend_schema(
+    request=ContactMessageSerializer,
+    responses={200: dict, 400: dict, 500: dict},
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def send_contact_email(request):
-    name = (request.data.get("name") or "").strip()
-    email = (request.data.get("email") or "").strip()
-    message = (request.data.get("message") or "").strip()
-
-    if not name or not email or not message:
+    serializer = ContactMessageSerializer(data=request.data)
+    if not serializer.is_valid():
         return Response(
-            {"ok": False, "error": "Name, email, and message are required."},
+            {"ok": False, "error": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    name = serializer.validated_data["name"]
+    email = serializer.validated_data["email"]
+    message = serializer.validated_data["message"]
 
     subject = f"New Contact Message from {name}"
     body = f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
@@ -31,7 +38,7 @@ def send_contact_email(request):
             fail_silently=False,
         )
         return Response({"ok": True, "message": "Message sent successfully!"})
-    except Exception as e:
+    except Exception:
         return Response(
             {"ok": False, "error": "Failed to send message."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
