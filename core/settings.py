@@ -3,50 +3,38 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ------------------------------------------------------------------------------
-# Core
-# ------------------------------------------------------------------------------
+
+def env_bool(name: str, default: str = "0") -> bool:
+    return os.getenv(name, default).strip() == "1"
+
+
+def env_list(name: str, default: str = ""):
+    raw = os.getenv(name, default)
+    return [x.strip() for x in raw.split(",") if x.strip()]
+
+
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
-DEBUG = (os.getenv("DEBUG", "0").strip() == "1")
+DEBUG = env_bool("DEBUG", "0")
 
-# Fix: Render can sometimes pass ALLOWED_HOSTS="" -> this would become []
-# so we fall back to "*"
-raw_hosts = (os.getenv("ALLOWED_HOSTS") or "*").strip()
-ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*")
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ["*"]
 
-# ------------------------------------------------------------------------------
-# CSRF + CORS
-# ------------------------------------------------------------------------------
-# Comma-separated list in env, e.g:
-# CSRF_TRUSTED_ORIGINS=https://byteprowler.vercel.app,https://your-api.onrender.com
-raw_csrf = (os.getenv("CSRF_TRUSTED_ORIGINS") or "").strip()
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in raw_csrf.split(",") if o.strip()]
-
-# If you want to configure CORS via env, set:
-# CORS_ALLOWED_ORIGINS=https://byteprowler.vercel.app,https://www.byteprowler.com,http://localhost:3000
-raw_cors = (os.getenv("CORS_ALLOWED_ORIGINS") or "").strip()
-
-DEFAULT_CORS_ALLOWED = [
-    "https://byteprowler.vercel.app",
-    "https://www.byteprowler.com",
-    "http://localhost:3000",
-]
-
-CORS_ALLOWED_ORIGINS = (
-    [o.strip() for o in raw_cors.split(",") if o.strip()]
-    if raw_cors
-    else DEFAULT_CORS_ALLOWED
+CSRF_TRUSTED_ORIGINS = env_list(
+    "CSRF_TRUSTED_ORIGINS",
+    "https://byteprowler.vercel.app,https://byteprowler-contact.onrender.com",
 )
 
-# Set to 1 only if you truly want any origin allowed (not recommended)
-CORS_ALLOW_ALL_ORIGINS = (os.getenv("CORS_ALLOW_ALL_ORIGINS", "0").strip() == "1")
+# CORS
+CORS_ALLOWED_ORIGINS = env_list(
+    "CORS_ALLOWED_ORIGINS",
+    "https://byteprowler.vercel.app,http://localhost:3000",
+)
 
-# Usually keep this False for public APIs like contact forms
+# Set this to 1 only for temporary debugging
+CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", "0")
 CORS_ALLOW_CREDENTIALS = False
 
-# ------------------------------------------------------------------------------
-# Apps
-# ------------------------------------------------------------------------------
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -54,23 +42,18 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # third-party
+
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
-    # local
+
     "contact",
 ]
 
-# ------------------------------------------------------------------------------
-# Middleware
-# ------------------------------------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-
-    # CORS should be as high as possible (before CommonMiddleware)
     "corsheaders.middleware.CorsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -99,9 +82,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
-# ------------------------------------------------------------------------------
-# Database (SQLite OK for simple contact API)
-# ------------------------------------------------------------------------------
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -109,30 +89,21 @@ DATABASES = {
     }
 }
 
-# ------------------------------------------------------------------------------
-# Static files (WhiteNoise)
-# ------------------------------------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# ------------------------------------------------------------------------------
 # Email (Gmail SMTP)
-# ------------------------------------------------------------------------------
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = (os.getenv("EMAIL_USE_TLS", "1").strip() == "1")
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+CONTACT_RECEIVER_EMAIL = os.getenv("CONTACT_RECEIVER_EMAIL", EMAIL_HOST_USER)
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "")
-CONTACT_RECEIVER_EMAIL = os.getenv("CONTACT_RECEIVER_EMAIL", EMAIL_HOST_USER or "")
-
-# ------------------------------------------------------------------------------
-# DRF + Swagger (drf-spectacular)
-# ------------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -144,26 +115,8 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
-# ------------------------------------------------------------------------------
-# Production safety on Render (recommended)
-# ------------------------------------------------------------------------------
-# Render sits behind a proxy; this helps Django know original scheme is HTTPS
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
 
 if not DEBUG:
-    CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True  # safe with SECURE_PROXY_SSL_HEADER set
-    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))  # set e.g 86400 later
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-    SECURE_HSTS_PRELOAD = False
-
-# ------------------------------------------------------------------------------
-# Defaults
-# ------------------------------------------------------------------------------
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_TZ = True
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+    CSRF_COOKIE_SECURE = True
