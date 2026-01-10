@@ -62,7 +62,6 @@ def send_contact_email(request):
         )
         return Response({"ok": True, "message": "Message sent successfully!"})
     except Exception as e:
-        # Helpful for Render logs
         print("EMAIL SEND ERROR:", str(e))
 
         return Response(
