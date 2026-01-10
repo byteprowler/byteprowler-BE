@@ -22,12 +22,35 @@ def send_contact_email(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    name = serializer.validated_data["name"]
-    email = serializer.validated_data["email"]
-    message = serializer.validated_data["message"]
+    data = serializer.validated_data
+
+    name = data["name"]
+    email = data["email"]
+    message = data["message"]
+
+    mode = data.get("mode", "individual")
+    project_type = data.get("project_type", "")
+    budget = data.get("budget", "")
+    timeline = data.get("timeline", "")
 
     subject = f"New Contact Message from {name}"
-    body = f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
+
+    body_lines = [
+        f"Name: {name}",
+        f"Email: {email}",
+        f"Mode: {mode}",
+    ]
+
+    if mode == "company":
+        body_lines += [
+            f"Project Type: {project_type}",
+            f"Budget: {budget}",
+            f"Timeline: {timeline}",
+        ]
+
+    body_lines += ["", "Message:", message]
+
+    body = "\n".join(body_lines)
 
     try:
         send_mail(
