@@ -3,19 +3,21 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
-DEBUG = os.getenv("DEBUG", "0") == "1"
+SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ["*"]
-
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = False
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://byteprowler.vercel.app",
-    "https://byteprowler-contact.onrender.com",
+ALLOWED_HOSTS = [
+    "byteprowler.vercel.app",
+    "byteprowler-contact.onrender.com",
+    "localhost",
+    "127.0.0.1"
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "https://byteprowler.vercel.app",
+    "https://www.byteprowler.com",
+    "http://localhost:3000"
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -94,7 +96,3 @@ SPECTACULAR_SETTINGS = {
 }
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-if not DEBUG:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True

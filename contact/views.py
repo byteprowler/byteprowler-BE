@@ -1,70 +1,51 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
 from django.core.mail import send_mail
 from django.conf import settings
+from .serializers import ContactSerializer
 
-from drf_spectacular.utils import extend_schema
-from .serializers import ContactMessageSerializer
+class ContactEmailView(APIView):
+    def post(self, request):
+        serializer = ContactSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            data = serializer.validated_data
+            
+            # Format the email body
+            subject = f"Portfolio Inquiry from {data['name']} ({data['mode']})"
+            
+            message_body = f"""
+            New message from: {data['name']}
+            Reply-to: {data['email']}
+            Category: {data['mode']}
+            
+            --- Project Details ---
+            Type: {data.get('project_type', 'N/A')}
+            Budget: {data.get('budget', 'N/A')}
+            Timeline: {data.get('timeline', 'N/A')}
+            
+            --- Message ---
+            {data['message']}
+            """
 
-
-@extend_schema(
-    request=ContactMessageSerializer,
-    responses={200: dict, 400: dict, 500: dict},
-)
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def send_contact_email(request):
-    serializer = ContactMessageSerializer(data=request.data)
-
-    if not serializer.is_valid():
-        return Response(
-            {"ok": False, "error": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    data = serializer.validated_data
-
-    name = data["name"]
-    email = data["email"]
-    message = data["message"]
-
-    mode = data.get("mode", "individual")
-    project_type = data.get("project_type", "")
-    budget = data.get("budget", "")
-    timeline = data.get("timeline", "")
-
-    subject = f"New Contact Message from {name}"
-
-    body_lines = [
-        f"Name: {name}",
-        f"Email: {email}",
-        f"Mode: {mode}",
-    ]
-
-    if mode == "company":
-        body_lines += [
-            f"Project Type: {project_type}",
-            f"Budget: {budget}",
-            f"Timeline: {timeline}",
-        ]
-
-    body_lines += ["", "Message:", message]
-    body = "\n".join(body_lines)
-
-    try:
-        send_mail(
-            subject=subject,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[settings.CONTACT_RECEIVER_EMAIL],
-            fail_silently=False,
-        )
-        return Response({"ok": True, "message": "Message sent successfully!"})
-    except Exception as e:
-        return Response(
-            {"ok": False, "error": f"Failed to send message: {str(e)}"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+            try:
+                send_mail(
+                    subject,
+                    message_body,
+                    settings.EMAIL_HOST_USER,
+                    [settings.CONTACT_RECEIVER_EMAIL],
+                    fail_silently=False,
+                    reply_to=[data['email']],
+                )
+                return Response(
+                    {"message": "Message delivered ✅ I’ll reply soon!"}, 
+                    status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                return Response(
+                    {"error": "Email server error. Please try again later."}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
