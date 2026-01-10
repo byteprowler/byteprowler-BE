@@ -1,3 +1,4 @@
+# contact/views.py
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -7,6 +8,7 @@ from django.conf import settings
 
 from drf_spectacular.utils import extend_schema
 from .serializers import ContactMessageSerializer
+
 
 @extend_schema(
     request=ContactMessageSerializer,
@@ -27,7 +29,6 @@ def send_contact_email(request):
     name = data["name"]
     email = data["email"]
     message = data["message"]
-
     mode = data.get("mode", "individual")
     project_type = data.get("project_type", "")
     budget = data.get("budget", "")
@@ -49,7 +50,6 @@ def send_contact_email(request):
         ]
 
     body_lines += ["", "Message:", message]
-
     body = "\n".join(body_lines)
 
     try:
@@ -61,7 +61,10 @@ def send_contact_email(request):
             fail_silently=False,
         )
         return Response({"ok": True, "message": "Message sent successfully!"})
-    except Exception:
+    except Exception as e:
+        # Helpful for Render logs
+        print("EMAIL SEND ERROR:", str(e))
+
         return Response(
             {"ok": False, "error": "Failed to send message."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

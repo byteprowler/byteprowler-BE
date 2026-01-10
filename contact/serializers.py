@@ -1,3 +1,4 @@
+# contact/serializers.py
 from rest_framework import serializers
 
 
@@ -6,13 +7,13 @@ class ContactMessageSerializer(serializers.Serializer):
     email = serializers.EmailField()
     message = serializers.CharField()
 
-    # ✅ Optional extra fields (Option B)
+    # Optional extra fields (Option B)
     mode = serializers.ChoiceField(
         choices=[("individual", "individual"), ("company", "company")],
         required=False,
         default="individual",
     )
-    project_type = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    project_type = serializers.CharField(required=False, allow_blank=True, max_length=200)
     budget = serializers.CharField(required=False, allow_blank=True, max_length=120)
     timeline = serializers.CharField(required=False, allow_blank=True, max_length=120)
 
