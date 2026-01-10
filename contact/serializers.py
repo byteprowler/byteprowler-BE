@@ -1,4 +1,3 @@
-# contact/serializers.py
 from rest_framework import serializers
 
 
@@ -7,7 +6,7 @@ class ContactMessageSerializer(serializers.Serializer):
     email = serializers.EmailField()
     message = serializers.CharField()
 
-    # Optional extra fields (Option B)
+    # optional extras
     mode = serializers.ChoiceField(
         choices=[("individual", "individual"), ("company", "company")],
         required=False,
@@ -18,9 +17,7 @@ class ContactMessageSerializer(serializers.Serializer):
     timeline = serializers.CharField(required=False, allow_blank=True, max_length=120)
 
     def validate(self, attrs):
-        mode = attrs.get("mode", "individual")
-
-        if mode == "company":
+        if attrs.get("mode", "individual") == "company":
             missing = {}
             if not attrs.get("project_type"):
                 missing["project_type"] = ["This field is required when mode is company."]
@@ -28,8 +25,6 @@ class ContactMessageSerializer(serializers.Serializer):
                 missing["budget"] = ["This field is required when mode is company."]
             if not attrs.get("timeline"):
                 missing["timeline"] = ["This field is required when mode is company."]
-
             if missing:
                 raise serializers.ValidationError(missing)
-
         return attrs
