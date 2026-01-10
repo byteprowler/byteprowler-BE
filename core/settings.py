@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "contact",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -88,4 +89,5 @@ CONTACT_RECEIVER_EMAIL = os.getenv("CONTACT_RECEIVER_EMAIL", EMAIL_HOST_USER)
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
