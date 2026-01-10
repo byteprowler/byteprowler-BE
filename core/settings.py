@@ -6,7 +6,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 DEBUG = os.getenv("DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
+ALLOWED_HOSTS = [
+    h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()
+]
 
 CSRF_TRUSTED_ORIGINS = [
     o.strip()
@@ -20,7 +22,7 @@ CORS_ALLOWED_ORIGINS = [
     if o.strip()
 ]
 
-CORS_ALLOW_ALL_ORIGINS = not bool(CORS_ALLOWED_ORIGINS)
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "0") == "1"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -31,14 +33,17 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "contact",
     "drf_spectacular",
+    "contact",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  
+
     "corsheaders.middleware.CorsMiddleware",
+
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -61,7 +66,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
             ],
         },
-    },
+    }
 ]
 
 WSGI_APPLICATION = "core.wsgi.application"
@@ -90,4 +95,10 @@ CONTACT_RECEIVER_EMAIL = os.getenv("CONTACT_RECEIVER_EMAIL", EMAIL_HOST_USER)
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "ByteProwler Contact API",
+    "DESCRIPTION": "API for contact form submissions",
+    "VERSION": "1.0.0",
 }
