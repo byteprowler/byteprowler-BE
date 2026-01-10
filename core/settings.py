@@ -3,37 +3,19 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-def env_bool(name: str, default: str = "0") -> bool:
-    return os.getenv(name, default).strip() == "1"
-
-
-def env_list(name: str, default: str = ""):
-    raw = os.getenv(name, default)
-    return [x.strip() for x in raw.split(",") if x.strip()]
-
-
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
-DEBUG = env_bool("DEBUG", "0")
+DEBUG = os.getenv("DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*")
-if not ALLOWED_HOSTS:
-    ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = env_list(
-    "CSRF_TRUSTED_ORIGINS",
-    "https://byteprowler.vercel.app,https://byteprowler-contact.onrender.com",
-)
-
-# CORS
-CORS_ALLOWED_ORIGINS = env_list(
-    "CORS_ALLOWED_ORIGINS",
-    "https://byteprowler.vercel.app,http://localhost:3000",
-)
-
-# Set this to 1 only for temporary debugging
-CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", "0")
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = False
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://byteprowler.vercel.app",
+    "https://byteprowler-contact.onrender.com",
+]
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -42,11 +24,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
-
     "contact",
 ]
 
@@ -54,7 +34,6 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -93,7 +72,6 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Email (Gmail SMTP)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
