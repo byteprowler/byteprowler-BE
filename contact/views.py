@@ -1,5 +1,5 @@
 import traceback
-from django.core.mail import send_mail, EmailMessage
+from django.core.mail import EmailMessage
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,27 +10,22 @@ class ContactEmailView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        # EVERYTHING below this must be indented by 4 spaces
         serializer = ContactSerializer(data=request.data)
         
-        # This will now pass because your serializer has all the fields
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         data = serializer.validated_data
         
-        sender_email = data.get('email')
-        user_name = data.get('name', 'Anonymous')
-        user_mode = data.get('mode', 'individual')
+        email_body = f"""
+        New message from: {data.get('name')}
+        Mode: {data.get('mode')}
+        Email: {data.get('email')}
         
-        subject = f"Inquiry from {user_name} ({user_mode})"
-        
-        body = f"""
-        New message from: {user_name}
-        Email: {sender_email}
-        Mode: {user_mode}
-        Project: {data.get('project_type', 'N/A')}
-        Budget: {data.get('budget', 'N/A')}
-        Timeline: {data.get('timeline', 'N/A')}
+        Project Details:
+        - Type: {data.get('project_type')}
+        - Budget: {data.get('budget')}
+        - Timeline: {data.get('timeline')}
         
         Message:
         {data.get('message')}
@@ -38,14 +33,15 @@ class ContactEmailView(APIView):
 
         try:
             email = EmailMessage(
-                subject=subject,
-                body=body,
+                subject=data.get('subject', 'New Inquiry'),
+                body=email_body,
                 from_email=settings.EMAIL_HOST_USER,
                 to=[settings.CONTACT_RECEIVER_EMAIL],
-                reply_to=[sender_email]
+                reply_to=[data.get('email')]
             )
             email.send(fail_silently=False)
-            return Response({"message": "Mail successfully sent"}, status=status.HTTP_200_OK)
+            return Response({"message": "Message delivered ✅ I’ll reply soon!"}, status=status.HTTP_200_OK)
+            
         except Exception as e:
-            print(f"Error sending email: {traceback.format_exc()}")
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(f"EMAIL ERROR: {traceback.format_exc()}")
+            return Response({"error": "Failed to send email. Check server logs."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
