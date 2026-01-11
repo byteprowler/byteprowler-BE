@@ -37,7 +37,7 @@ class ContactEmailView(APIView):
                 "reply_to": data.get('email')
             })
             
-            return Response({"message": "Sent via API! Render can't block this! 🚀"}, status=status.HTTP_200_OK)
+            return Response({"message": "Thank you for reaching out. Your message has been received, and I’ll respond shortly"}, status=status.HTTP_200_OK)
             
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
