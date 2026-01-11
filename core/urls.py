@@ -7,7 +7,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     
     path("api/contact/send/", ContactEmailView.as_view(), name="contact-send"),
-    
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("swagger/", SpectacularAPIView.as_view(), name="schema"),
+    path("redocs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 ]

@@ -1,51 +1,41 @@
+import traceback
+from django.core.mail import send_mail, EmailMessage
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from django.core.mail import send_mail
-from django.conf import settings
+from rest_framework import status, permissions
 from .serializers import ContactSerializer
 
 class ContactEmailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         serializer = ContactSerializer(data=request.data)
         
-        if serializer.is_valid():
-            data = serializer.validated_data
-            
-            # Format the email body
-            subject = f"Portfolio Inquiry from {data['name']} ({data['mode']})"
-            
-            message_body = f"""
-            New message from: {data['name']}
-            Reply-to: {data['email']}
-            Category: {data['mode']}
-            
-            --- Project Details ---
-            Type: {data.get('project_type', 'N/A')}
-            Budget: {data.get('budget', 'N/A')}
-            Timeline: {data.get('timeline', 'N/A')}
-            
-            --- Message ---
-            {data['message']}
-            """
-
-            try:
-                send_mail(
-                    subject,
-                    message_body,
-                    settings.EMAIL_HOST_USER,
-                    [settings.CONTACT_RECEIVER_EMAIL],
-                    fail_silently=False,
-                    reply_to=[data['email']],
-                )
-                return Response(
-                    {"message": "Message delivered ✅ I’ll reply soon!"}, 
-                    status=status.HTTP_200_OK
-                )
-            except Exception as e:
-                return Response(
-                    {"error": "Email server error. Please try again later."}, 
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+        serializer.is_valid(raise_exception=True)
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        sender_email = serializer.validated_data['email']
+        subject = serializer.validated_data['subject']
+        message = serializer.validated_data['message']
+
+        try:
+            email = EmailMessage(
+                subject=f"New Inquiry: {subject}",
+                body=f"From: {sender_email}\n\nMessage:\n{message}",
+                from_email=settings.EMAIL_HOST_USER,
+                to=["joshuaexcellency1@gmail.com"],
+                reply_to=[sender_email]  
+            )
+            
+            email.send(fail_silently=False)
+            
+            return Response(
+                {"message": "Mail successfully sent! I will get back to you soon."}, 
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
