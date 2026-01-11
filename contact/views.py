@@ -1,10 +1,13 @@
-import traceback
-from django.core.mail import EmailMessage
+import resend
+import os
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from .serializers import ContactSerializer
+
+# Initialize Resend
+resend.api_key = os.getenv("RESEND_API_KEY")
 
 class ContactEmailView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -12,36 +15,29 @@ class ContactEmailView(APIView):
     def post(self, request):
         serializer = ContactSerializer(data=request.data)
         
+        # If frontend sends "name" or "budget", serializer now accepts them
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         data = serializer.validated_data
         
-        email_body = f"""
-        New message from: {data.get('name')}
-        Mode: {data.get('mode')}
-        Email: {data.get('email')}
-        
-        Project Details:
-        - Type: {data.get('project_type')}
-        - Budget: {data.get('budget')}
-        - Timeline: {data.get('timeline')}
-        
-        Message:
-        {data.get('message')}
+        html_content = f"""
+        <strong>New Inquiry from {data.get('name')}</strong><br/>
+        <strong>Email:</strong> {data.get('email')}<br/>
+        <strong>Mode:</strong> {data.get('mode')}<br/>
+        <p><strong>Message:</strong> {data.get('message')}</p>
         """
 
         try:
-            email = EmailMessage(
-                subject=data.get('subject', 'New Inquiry'),
-                body=email_body,
-                from_email=settings.EMAIL_HOST_USER,
-                to=[settings.CONTACT_RECEIVER_EMAIL],
-                reply_to=[data.get('email')]
-            )
-            email.send(fail_silently=False)
-            return Response({"message": "Message delivered ✅ I’ll reply soon!"}, status=status.HTTP_200_OK)
+            resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": settings.CONTACT_RECEIVER_EMAIL,
+                "subject": data.get('subject', 'New Inquiry'),
+                "html": html_content,
+                "reply_to": data.get('email')
+            })
+            
+            return Response({"message": "Sent via API! Render can't block this! 🚀"}, status=status.HTTP_200_OK)
             
         except Exception as e:
-            print(f"EMAIL ERROR: {traceback.format_exc()}")
-            return Response({"error": "Failed to send email. Check server logs."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
