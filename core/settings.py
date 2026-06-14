@@ -1,23 +1,51 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
-DEBUG = os.getenv("DEBUG", "False") == "True"
+load_dotenv(BASE_DIR / ".env")
 
-ALLOWED_HOSTS = [
-    "byteprowler.vercel.app",
-    "byteprowler-contact.onrender.com",
-    "localhost",
-    "127.0.0.1"
-]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://byteprowler.vercel.app",
-    "https://www.byteprowler.com",
-    "http://localhost:3000"
-]
+def env_bool(name, default=False):
+    return os.getenv(name, str(default)).lower() in {"1", "true", "yes", "on"}
+
+
+def env_list(name, default):
+    raw_value = os.getenv(name)
+    if not raw_value:
+        return default
+    return [item.strip() for item in raw_value.split(",") if item.strip()]
+
+
+DEBUG = env_bool("DEBUG", False)
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "django-insecure-local-development-only"
+    else:
+        raise RuntimeError("SECRET_KEY environment variable is required.")
+
+ALLOWED_HOSTS = env_list(
+    "ALLOWED_HOSTS",
+    [
+        "byteprowler-contact.onrender.com",
+        "localhost",
+        "127.0.0.1",
+    ],
+)
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://byteprowler.vercel.app")
+
+CORS_ALLOWED_ORIGINS = env_list(
+    "CORS_ALLOWED_ORIGINS",
+    [
+        FRONTEND_URL,
+        "https://www.byteprowler.com",
+        "http://localhost:3000",
+    ],
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -72,10 +100,15 @@ DATABASES = {
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-CONTACT_RECEIVER_EMAIL = "joshuaexcellency1@gmail.com"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "")
+CONTACT_RECEIVER_EMAIL = os.getenv("CONTACT_RECEIVER_EMAIL", "")
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
