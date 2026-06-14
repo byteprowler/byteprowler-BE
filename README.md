@@ -1,10 +1,10 @@
 # ByteProwler Contact API (Django)
 
 A simple Django REST API that powers the contact form on my portfolio website.
-It accepts contact messages and sends them to my email using Gmail SMTP.
+It accepts contact messages and sends them to my email using Resend.
 
 ## Live URL
-- API Base URL: https://byteprowler.contact.onrender.com
+- API Base URL: https://byteprowler-contact.onrender.com
 
 ## Tech Stack
 - Django
@@ -12,13 +12,13 @@ It accepts contact messages and sends them to my email using Gmail SMTP.
 - django-cors-headers
 - Whitenoise (static files on Render)
 - Gunicorn (production server)
-- Gmail SMTP (email sending)
+- Resend (email sending)
 
 ---
 
 ## Features
 - Contact form endpoint (POST)
-- Email delivery via SMTP
+- Email delivery via Resend
 - CORS configured for portfolio frontend
 - Render deployment ready
 
@@ -34,5 +34,6 @@ Send a contact message.
 {
   "name": "John Doe",
   "email": "john@example.com",
+  "subject": "Project inquiry",
   "message": "Hello, I’d like to work with you."
 }
